@@ -2,6 +2,47 @@
 
 ## My Learning Journey
 
+### 25 May 20205
+
+### Resolving "ERR_MODULE_NOT_FOUND: Cannot find package 'gpt4all'" on ARM64 Windows
+
+#### Problem Description
+
+I encountered an `Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'gpt4all'` when running the `pnpm clustering` script within my `semantic-embedding-template` project. This occurred on my ARM64 Windows laptop. The initial symptom was a `node-gyp-build` error ("No native build was found for platform=win32 arch=arm64..."), indicating that `gpt4all` could not be compiled or found as a pre-built binary for my specific ARM64 architecture and Node.js version.
+
+Despite my intention to use LM Studio for all embedding operations, `gpt4all` was listed as a direct dependency in my `package.json`. Further investigation revealed that the `lib/embeddings.js` module, which is crucial for the `clustering` script, was explicitly importing and attempting to use `gpt4all` for embedding generation. Since `gpt4all` doesn't provide native binaries for ARM64 Windows, and I wanted to leverage LM Studio, a direct code modification was necessary to resolve this conflict.
+
+#### Steps Taken to Fix
+
+The solution involved a two-pronged approach: first, eliminating the problematic `gpt4all` dependency from the project's configuration, and second, directly modifying the `lib/embeddings.js` file to integrate LM Studio for embedding generation instead.
+
+1.  **Removed `gpt4all` from `package.json`**:
+    * I opened my `package.json` file located at `C:\Users\fujid\Desktop\memetics\semantic-embedding-template\package.json`.
+    * I removed the line `"gpt4all": "^4.0.0",` from the `dependencies` section.
+    * This step prevented `pnpm` from attempting to install `gpt4all` altogether, which resolved the initial `node-gyp-build` error.
+
+2.  **Modified `lib/embeddings.js` for LM Studio Integration**:
+    * I opened `C:\Users\fujid\Desktop\memetics\semantic-embedding-template\lib\embeddings.js`.
+    * I replaced its entire content with a revised version that utilizes the LM Studio local server API for embedding generation. Key changes included:
+        * Removing the import statement for `gpt4all`: `import { loadModel, createEmbedding } from 'gpt4all'`.
+        * Adding configuration constants for the LM Studio API endpoint (`http://localhost:1234/v1/embeddings`) and the specific embedding model running in LM Studio (e.g., `'nomic-embed-text'`).
+        * Rewriting the `embed` asynchronous method to perform a `POST` request to the LM Studio API, passing the text input and extracting the embedding vector from the API's JSON response. Robust error handling for the API call was also integrated.
+
+3.  **Clean Reinstallation of Dependencies**:
+    * After modifying both `package.json` and `lib/embeddings.js`, I performed a clean reinstallation of all project dependencies to ensure that `gpt4all` was fully removed and all other necessary packages were correctly installed.
+    * I navigated to my project directory (`C:\Users\fujid\Desktop\memetics\semantic-embedding-template`) in my PowerShell terminal and ran the following commands:
+
+    ```powershell
+    Remove-Item -Recurse -Force node_modules
+    Remove-Item pnpm-lock.yaml
+    pnpm store prune
+    pnpm cache clean
+    pnpm install
+    ```
+
+After these steps, executing `pnpm clustering` successfully ran the script, now utilizing LM Studio for embedding generation as intended, completely bypassing the problematic `gpt4all` dependency.
+
+
 ### 23 May 2025
 
 I spent a sizeable amount of time attempting to get GPT4All working locally - initially WSL using Ubuntu before migrating back to Windows 11. Ultimately, I did not have any luck. Everytime I would run the command:
