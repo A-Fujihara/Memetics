@@ -2,6 +2,51 @@
 
 ## My Learning Journey
 
+### 5 June 2025
+
+
+# UMAP Tweet Embedding Visualization Project Summary
+
+## Project Overview and Initial Setup
+I began with the goal of creating a dynamic visualization of tweet embeddings that had already been processed on the Windows side and stored in a CSV file. The embeddings were 768-dimensional vectors representing the semantic content of tweets. My objective was to reduce these high-dimensional embeddings to a 2D visualization that would show clusters of semantically similar tweets, with the requirement that this visualization update dynamically as new data became available.
+
+## Environment Setup and Tool Selection
+The project was conducted in a WSL (Windows Subsystem for Linux) environment using VSCode, primarily because Python libraries would not run properly on Windows ARM64 architecture. This compatibility issue forced me to switch to the Linux subsystem to ensure all required libraries could function correctly. I chose to work with Python in a conda environment, which required installing pandas for data manipulation. 
+
+## Data Processing and Technical Challenges
+The main technical challenge encountered was handling malformed data in the CSV file. Initially, the script failed due to "nan" values in the embedding column, which caused parsing errors when using Python's `ast.literal_eval()` function. This was resolved by implementing error handling that skipped malformed entries while preserving valid embeddings. The solution involved checking for null values and malformed strings before attempting to parse the embedding arrays.
+
+## Implementation and Execution
+The core implementation involved creating a Python script that loaded the CSV file containing 504 tweets with their corresponding 768-dimensional embeddings. The script converted embedding strings to numpy arrays, applied UMAP reduction to transform the data from 768 dimensions to 2 dimensions, and generated a scatter plot visualization. The final output was saved as a PNG file showing the semantic clustering of tweets in 2D space, where similar content appears grouped together visually.
+
+## Results and Dynamic Visualization Requirements
+The static approach successfully generated the visualization, processing all 504 valid embeddings and creating a clear scatter plot that revealed semantic clusters within the tweet data. However, this approach only created a snapshot and didn't meet the dynamic updating requirements. Dynamic updates will be the next progression.
+
+## Technical Methodology Summary
+The methodology can be summarized as: semantic embeddings were generated and stored in CSV format on the Windows side, then imported into the WSL environment where pandas was used for data loading and manipulation. A Python script leveraging UMAP reduced the dimensionality from 768D to 2D and created scatter plot visualizations.
+
+## Future Direction and Dynamic Implementation
+While the static PNG generation proved the concept successfully, the project's ultimate goal requires dynamic updating capabilities. The next phase involves implementing a Streamlit-based web dashboard that can monitor the CSV file for changes and automatically regenerate the UMAP visualization in real-time, providing a continuously updated view of tweet semantic clusters as new data is processed and added to the dataset - with a goal of transitioning the CSV file to Supabase as the next progression.
+
+![image](https://github.com/user-attachments/assets/9eef7bbf-90a6-4901-b5d1-418601bae4a3)
+
+
+
+### 3 June 2025
+
+# Initial steps at semantic embedding
+Starting with the collection of 37,939 tweets from four users (imitationlearn, maimecat, danielgolliner, and mcd0w). The initial data collection went smoothly, storing tweets with metadata like usernames, timestamps, and full text content in a structured CSV format. My goal was to transform these tweets into high-dimensional semantic vectors that could reveal content patterns and relationships when visualized.
+
+The first major challenge emerged when setting up the embedding generation pipeline. I initially configured LMStudio with the Nomic text embedding model (text-embedding-nomic-embed-text-v1.5), which produces 768-dimensional vectors. However, my first embedding script included a 0.1-second delay between API calls that would have resulted in over 63 minutes of pure waiting time for the full dataset - an estimated 44+ hours total processing time. This delay was intended to be polite to the API but proved to be a massive bottleneck.
+
+I somewhat solved the performance issue by completely removing the delay which reduced the processing time from 44 hours to approximately 1-1.5 hours for the full dataset. However, even this 'optimized' timeline felt too long as I was still only testing a subset that equated to less than 3% of the total data available. I made a strategic decision to focus on the smallest subset of data first, selecting just the two users with the fewest tweets (danielgolliner and mcd0w, totaling 6,496 tweets) to validate the pipeline before scaling up.
+
+Even with the reduced dataset, I encountered another estimation challenge as the actual processing rate was significantly slower than anticipated. Instead of the 50ms per tweet I initially estimated, each embedding was taking 7-8 seconds due to API response time, network latency, and model processing overhead. The reality showed approximately 6-8 tweets per minute, making even my reduced dataset require substantial time. I ultimately processed just the mcd0w user's 510 tweets as our proof of concept.
+
+After roughly 80 minutes of processing, I successfully generated embeddings for 504 out of 510 tweets (98.8% success rate) with only 6 errors. The embeddings are stored as JSON arrays in a single CSV column, with each tweet represented as a 768-dimensional vector. This gave me a solid foundation for the next phase: dimensionality reduction using UMAP to compress these 768-dimensional vectors into 2D coordinates for interactive visualization. 
+
+
+
 ### May 25 2025
 
 # Understanding the Curse of Dimensionality and the Need for Dimensionality Reduction
