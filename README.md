@@ -77,8 +77,6 @@ Building AI-powered data visualization tools is achievable with modern open-sour
 
 ---
 
-*Full source code available on GitHub with setup instructions and troubleshooting guide.*
-
 ### 5 June 2025
 
 
