@@ -2,6 +2,83 @@
 
 ## My Learning Journey
 
+### 3 July 2025
+
+I built a system to collect tweets, generate semantic embeddings, and visualize them in an interactive 2D cluster map. What seemed straightforward turned into a journey through platform compatibility issues and machine learning quirks.
+
+**Final Architecture:**
+```
+Tweet Collection → LM Studio Embeddings → UMAP Reduction → Streamlit Visualization
+```
+
+## Challenge 1: ARM64 Windows Compatibility
+
+**Problem:** I started development on ARM64 Windows. Tweet collection worked fine, but data science libraries (`pandas`, `numpy`, `umap-learn`) had major compatibility issues.
+
+**Solution:** I migrated the entire project to WSL (Windows Subsystem for Linux). All libraries work perfectly in Ubuntu.
+
+**Lesson:** For data science work, ARM64 Windows still has gaps. WSL is your friend.
+
+## Challenge 2: LM Studio Networking Issues
+
+**Problem:** I needed LM Studio (Windows) to talk to Python scripts (WSL) for embedding generation. Standard `localhost:1234` failed completely.
+
+**Failed attempts:**
+- Windows Firewall rules
+- Different IP addresses  
+- Disabling firewall entirely
+
+**Solution:**
+1. Find Windows IP: `cat /etc/resolv.conf` in WSL
+2. Enable "Serve on Local Network" in LM Studio
+3. Use actual IP: `http://10.0.0.7:1234/v1/embeddings`
+
+Result: Embedding generation went from impossible to under 1 minute for 500+ tweets.
+
+**Lesson:** WSL networking isn't just "Linux on Windows" - it's a separate network environment.
+
+## Challenge 3: The UMAP Consistency Mystery
+
+**Problem:** I added `random_state=42` to UMAP for consistent visualizations, but adding test tweets completely rearranged the entire layout.
+
+**Debugging:** I added logging to verify the random seed was working:
+```python
+print(f"UMAP random_state: {reducer.random_state}")
+print(f"First few coordinates: {embedding_2d[:3]}")
+```
+
+**Discovery:** The random seed WAS working perfectly! Same data = identical coordinates every time.
+
+**Reality Check:** UMAP recalculates the entire layout when you add ANY new data points. This is correct behavior - UMAP optimizes the global layout considering all points together.
+
+**Lesson:** Deterministic ≠ stable coordinates. UMAP prioritizes optimal layout over coordinate stability.
+
+## Key Learnings
+
+1. **Platform matters**: Check compatibility early, especially on ARM64
+2. **Local AI is powerful**: LM Studio provides speed + privacy that cloud APIs can't match
+3. **Debug assumptions**: When algorithms behave unexpectedly, verify what you think you know
+4. **User expectations vs. reality**: Sometimes correct behavior feels wrong to users
+
+## Results
+
+✅ Collects tweets from multiple users  
+✅ Generates embeddings locally with LM Studio  
+✅ Creates interactive 2D visualizations  
+✅ Supports test tweet validation  
+✅ Runs smoothly on ARM64 Windows via WSL  
+✅ Deployable to Streamlit Cloud  
+
+## Conclusion
+
+Building AI-powered data visualization tools is achievable with modern open-source tools, but expect platform quirks and algorithmic surprises. The combination of local AI models, UMAP, and Streamlit creates a compelling stack for text analysis.
+
+**Most important lesson**: Don't fight platform limitations - embrace solutions like WSL that give you the best of both worlds.
+
+---
+
+*Full source code available on GitHub with setup instructions and troubleshooting guide.*
+
 ### 5 June 2025
 
 
