@@ -2,6 +2,90 @@
 
 ## My Learning Journey
 
+### 18 July 2025
+
+# How I Solved the 2.5 Million Node Semantic Similarity Problem with FAISS
+
+I am reseraching the details of adding a feature where users could click on any data point and instantly see all semantically related data points displayed in a list. The goal was to create an interactive interface that reveals hidden semantic connections in large datasets.
+
+When I first started working on this semantic similarity project, I had what seemed like a straightforward idea: create a graph where each embedding is a node, and if two embeddings are semantically similar (based on cosine similarity above a threshold), I'd connect them with an edge. Simple, right? Then I could use standard graph algorithms like BFS or DFS to find connected components, effectively discovering clusters of semantically related data points that I could display when a user clicks on their target point.
+
+The concept was solid, but reality hit hard when I considered the scale.
+
+## The Crushing Reality of Scale
+
+I'm working with approximately 2.5 million embeddings. My initial approach required comparing every embedding to every other embedding to determine semantic similarity. Let me break down why this was completely infeasible:
+
+- **Number of comparisons needed:** 2.5 million × 2.5 million = 6.25 trillion pairwise comparisons
+- **Memory requirements:** Storing a full similarity matrix would require roughly 50GB of RAM
+- **Computation time:** Even with optimized cosine similarity calculations, this would take days or potentially weeks to complete
+- **Storage nightmare:** Even using an adjacency list instead of a matrix didn't solve the core problem – I still needed to calculate all those similarities first
+
+I realized I was facing a classic O(n²) scaling problem. What worked perfectly fine on my test dataset of 516 embeddings would completely break down at production scale.
+
+## Enter FAISS: The Game Changer
+
+After researching alternatives, I discovered FAISS (Facebook AI Similarity Search), and it completely transformed my approach. FAISS is a specialized library designed specifically for efficient similarity search in large-scale vector datasets – exactly my problem.
+
+Here's how FAISS addresses each of my major concerns:
+
+### Concern #1: Computational Complexity
+**Problem:** 6.25 trillion similarity calculations
+**FAISS Solution:** Uses Approximate Nearest Neighbor (ANN) algorithms that avoid comparing every pair. Instead of checking all possible combinations, FAISS builds optimized data structures with built-in search algorithms that operate at approximately O(log n) time complexity, allowing sub-linear search times.
+
+### Concern #2: Memory Usage
+**Problem:** 50GB+ memory requirements for similarity matrix
+**FAISS Solution:** Never stores the full similarity matrix. Instead, it builds compressed indexes and only returns the k most similar neighbors for each query, creating a sparse graph representation.
+
+### Concern #3: Time to Results
+**Problem:** Days or weeks of computation
+**FAISS Solution:** 
+- Index building: 10-30 minutes (one-time cost)
+- Individual similarity queries: 1-50 milliseconds
+- Total time for building sparse graph: Hours instead of weeks
+
+## My New Approach with FAISS
+
+Here's how I restructured my solution:
+
+### Step 1: Build the FAISS Index
+I create a specialized data structure from all 2.5 million embeddings. This is a one-time computational cost that takes 10-30 minutes, but it enables lightning-fast similarity searches afterward.
+
+### Step 2: Create Sparse Graph Connections
+Instead of comparing every embedding to every other embedding, I use FAISS to find only the k most similar neighbors for each embedding (say, k=50). This transforms my graph from a dense structure with 6.25 trillion potential edges to a sparse graph with only 125 million actual edges.
+
+### Step 3: Leveraging FAISS's Built-in Search
+Initially, I planned to use BFS or DFS algorithms on the sparse graph to find connected components. However, I discovered that FAISS has built-in search algorithms that operate at approximately O(log n) complexity, making traditional graph traversal unnecessary. I can directly query for semantically similar clusters using FAISS's optimized search methods.
+
+## The Technical Magic Behind FAISS
+
+What makes FAISS so powerful is its use of Approximate Nearest Neighbor algorithms. Instead of checking every possible similarity, FAISS:
+
+1. **Organizes embeddings** into clusters or regions based on similarity during index building
+2. **Intelligently prunes** the search space by only checking embeddings in "nearby" regions
+3. **Leverages spatial locality** in embedding space – semantically similar embeddings naturally cluster together
+
+The key insight is that FAISS uses the structure it creates to avoid obviously poor matches without ever calculating their similarity scores.
+
+## Results and Impact
+
+This approach has completely solved my scaling concerns:
+
+- **Feasible computation time:** From weeks to hours
+- **Manageable memory usage:** No more 50GB similarity matrices
+- **Maintained accuracy:** ANN provides approximate but highly accurate results
+- **Scalable architecture:** Can handle millions of embeddings efficiently
+
+The best part? While I originally planned to use BFS/DFS for finding connected components in my graph structure, FAISS's built-in search algorithms eliminated that need entirely. The fundamental concept of finding semantically related clusters remains intact, but with a much more efficient implementation.
+
+## Lessons Learned
+
+This project taught me a valuable lesson about the difference between algorithmic correctness and practical feasibility. My original graph-based approach was theoretically sound but completely impractical at scale. Sometimes the best solution isn't to optimize the obvious approach, but to find a completely different method that achieves the same goal more efficiently.
+
+FAISS didn't just solve my technical problem – it opened up possibilities I hadn't even considered. With fast similarity search, I can now experiment with different similarity thresholds, dynamic graph updates, and real-time semantic clustering that would have been impossible with my original brute-force approach.
+
+For anyone working with large-scale embedding similarity problems, I can't recommend FAISS highly enough. It's the difference between having a theoretical solution and having a production-ready system.
+
 ### 17 July 2025
 
 # Solving UMAP's Dynamic Visualization Challenge: A Deep Dive into Stability vs. Quality Trade-offs
