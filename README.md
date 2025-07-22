@@ -23,7 +23,7 @@ I'm working with approximately 2.5 million embeddings. My initial approach requi
 
 I realized I was facing a classic O(n²) scaling problem. What worked perfectly fine on my test dataset of 516 embeddings would completely break down at production scale.
 
-## Enter FAISS: The Game Changer
+## Enter FAISS
 
 After researching alternatives, I discovered FAISS (Facebook AI Similarity Search), and it completely transformed my approach. FAISS is a specialized library designed specifically for efficient similarity search in large-scale vector datasets – exactly my problem.
 
