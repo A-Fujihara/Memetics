@@ -2,6 +2,107 @@
 
 ## My Learning Journey
 
+### 17 July 2025
+
+# Solving UMAP's Dynamic Visualization Challenge: A Deep Dive into Stability vs. Quality Trade-offs
+
+Working on dynamic visualizations has taught me that the most interesting problems often hide behind seemingly simple requirements. Recently, I encountered a fascinating challenge with UMAP that led to some valuable insights about algorithmic behavior and user experience design.
+
+## The Challenge: Dynamic Points in a Static Space
+
+I needed to add interactive functionality where users could input test tweets and see where they land semantically in an existing UMAP visualization. The requirement seemed straightforward, but it revealed a fundamental tension in dimensionality reduction algorithms.
+
+When I added new test tweets using the standard `fit_transform()` approach on the combined dataset, every existing point would shift position. This created a poor user experience where reference points constantly moved, making it impossible to track relationships over time.
+
+## Understanding the Problem Space
+
+It was suggested to that I should try separating UMAP's `fit()` and `transform()` methods, which led me to investigate exactly how these methods work:
+
+- **`fit()`** analyzes training data and learns mapping rules from high-dimensional to low-dimensional space
+- **`transform()`** applies those learned rules to new data points
+
+The key insight was that `transform()` behavior varies depending on whether you process points individually or in batches. This isn't a bug—it's a feature that reflects how UMAP optimizes positioning.
+
+## A Mental Model That Clarified Everything
+
+I found it helpful to think of this like arranging furniture. If you're placing 100 pieces:
+
+**Batch arrangement**: You see all pieces at once and can optimize the overall layout for the best fit.
+
+**Individual placement**: You place one piece at a time, making each decision without knowing what comes next.
+
+Both approaches work, but they optimize for different things. Batch processing optimizes relationships between all items, while individual processing prioritizes consistency with existing arrangements.
+
+## The Solution: Strategic Caching Architecture
+
+I developed an approach that leverages caching to maintain stability:
+
+### Permanent Base Model
+```python
+@st.cache_data 
+def load_base_tweets_and_fit_umap():
+    reducer = umap.UMAP(n_components=2, random_state=42)
+    base_coordinates = reducer.fit_transform(base_embeddings)
+    return reducer, base_coordinates, base_indices
+```
+
+### Individual Transform and Store
+```python
+# Use cached model for individual transforms
+test_coordinates = reducer.transform([test_embedding])
+
+# Permanent storage in session state
+st.session_state.test_tweets_coordinates[str(test_id)] = {
+    'text': tweet_text,
+    'coordinates': test_coordinates[0]
+}
+```
+
+### Dual Storage Strategy
+The solution required separating concerns:
+- **Session state**: Permanent coordinate storage for stability
+- **Plotting arrays**: Temporary combination for visualization
+
+## Discovering the Trade-off
+
+Testing revealed an interesting behavior: semantically similar test tweets ("This is test tweet 1" vs "This is test tweet 2") positioned further apart than expected compared to batch processing.
+
+This isn't a flaw—it's the natural result of individual transforms. When UMAP processes points individually, it can't optimize their relationships to each other, only to the existing space.
+
+## Technical Implementation Details
+
+The solution required careful cache management. Test tweets needed to persist in both the CSV file and session state, with different caching strategies:
+
+- **UMAP model**: Cached permanently for stability
+- **Data loading**: Uncached to detect CSV updates
+- **Coordinates**: Stored in session state for persistence
+
+## Key Insights
+
+### Algorithm Behavior Has Context
+UMAP's documentation mentions different behaviors for individual vs. batch transforms, but experiencing this firsthand provided valuable intuition about when each approach is appropriate.
+
+### User Experience Drives Technical Decisions
+The choice between optimal clustering quality and positional stability came down to user needs. For interactive exploration, stability proved more valuable than perfect semantic clustering.
+
+### Caching Strategy Shapes Functionality
+In interactive applications, cache design isn't just about performance—it fundamentally affects how the application behaves and what user experiences are possible.
+
+### Collaborative Problem-Solving Works
+My mentor's suggestion about separating `fit()` and `transform()` was directionally correct, even though the reasoning differed from the final implementation. Different perspectives often illuminate solutions.
+
+## Broader Applications
+
+This challenge highlighted how seemingly simple interactive features can reveal deep algorithmic considerations. The solution pattern—using cached models with individual transforms—could apply to other dynamic visualization scenarios where stability matters more than optimal clustering.
+
+The experience reinforced that the best technical solutions often involve understanding and embracing trade-offs rather than trying to optimize everything simultaneously.
+
+## Moving Forward
+
+This deep dive into UMAP's behavior provided valuable intuition for future interactive visualization projects. Understanding when to prioritize stability over optimal clustering—and how to implement that technically—opens up new possibilities for user-centered data exploration tools.
+
+The technical solution works well, but more importantly, it taught me to think differently about the relationship between algorithmic behavior and user experience in interactive systems.
+
 ### 10 July 2025
 
 # Adding Interactive Test Tweet Functionality to My Semantic Clustering Visualization
