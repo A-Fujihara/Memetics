@@ -2,6 +2,79 @@
 
 ## My Learning Journey
 
+### 31 July 2025
+
+# Scaling Up: Running the Full Tweet Embedding Pipeline
+
+## The Plan vs Reality
+
+After successfully testing the tweet embedding pipeline on small datasets, I decided to run it on the full production dataset. What was discovered was a series of scale-related challenges that turned a weekend project into a week-long debugging session.
+
+## Stage 1: Data Collection Surprises
+
+### The Database Was Bigger Than Expected
+- **Expected**: 2.5M tweets
+- **Actual**: 6.5M tweets
+- **After filtering**: 4.5M filtered tweets collected in ~2 hours
+
+The checkpointing system proved essential - the collection completed successfully despite the much larger dataset.
+
+## Stage 2: Embedding Generation Reality Check
+
+### The ARM64/CUDA Limitation
+The biggest bottleneck wasn't just thermal throttling - it was a fundamental architecture limitation. **CUDA doesn't support ARM64 Windows**, which meant no GPU acceleration for the embedding model. The Surface Laptop 7's Snapdragon X Elite processor was forced to handle all embedding computation on the CPU.
+
+**ONNX could have been a potential solution** for ARM64 optimization, but LM Studio doesn't support ONNX runtime. This left me with purely CPU-based inference, which explains the dramatic performance difference between initial estimates and sustained production rates.
+
+### The Time Math That Changed Everything
+At 470 tweets/minute for 4.5M tweets = **160+ hours** (~7 days of continuous processing). This was far beyond the original 8-12 hour estimate, which was based on the 2.5M tweet assumption.
+
+### The Pragmatic Decision
+Instead of running for a week, I **stopped at 21,200 tweets** - enough for meaningful visualization while keeping the processing time reasonable (~45 minutes).
+
+## Stage 3: Visualization Challenges at Scale
+
+### The Sampling Problem
+With 21k tweets creating dense, unreadable clusters, I needed smart sampling controls. The max tweets slider became essential for:
+- **Performance**: Faster UMAP computation
+- **Clarity**: Less dense clusters reveal structure better
+- **Interactivity**: Real-time parameter adjustments
+
+### The Red Dots Mystery
+When implementing interactive controls, test tweets stopped appearing as red dots. The issue: **CSV format mismatch** during test tweet insertion. Test tweets were being written in the wrong format, so the verification step couldn't find them later.
+
+## Key Lessons Learned
+
+### 1. Scale Changes Everything
+- Small dataset performance doesn't predict large dataset behavior
+- Hardware thermal throttling becomes significant over hours
+- Time estimates need major safety margins
+
+### 2. Pragmatic Stopping Points
+- 21k tweets still provided meaningful clustering insights
+- Sometimes "good enough" is better than perfect
+- You can always resume later if needed
+
+### 3. Interactive Controls Are Essential
+- Fixed parameters work for demos, not exploration
+- Users need to tune UMAP settings to reveal structure
+- Sampling controls become critical at scale
+
+### 4. Error Handling Under Load
+- CSV parsing issues only surface with real production data
+- Systems that work for hundreds of records may fail for thousands
+- Robust error handling and debugging capabilities are essential
+
+## The Result
+
+While I didn't process the full 4.5M tweets, I did ended up with:
+- **A working visualization** of 21k tweets with clear clustering
+- **Interactive UMAP controls** for parameter exploration  
+- **Robust error handling** for production-scale data
+- **Realistic performance expectations** for future runs
+
+Sometimes the journey teaches you more than reaching the original destination.
+
 ### 18 July 2025
 
 # How I Solved the 2.5 Million Node Semantic Similarity Problem with FAISS
