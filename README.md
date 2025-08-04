@@ -2,25 +2,28 @@
 
 ## My Learning Journey
 
-### 3 Aug 2025
+### 03 August 2025
 
 The Two random_states You Need for Stable UMAP Embeddings: My Journey Down the Reproducibility Rabbit Hole
+The Initial Plan vs. Reality
 Today, I went down quite a rabbit hole. What started as a frustrating inconsistency in my UMAP visualizations ended up being incredibly enlightening, fundamentally rewriting my understanding of how fit() and transform() truly work in practice, especially regarding reproducibility.
 
-Understanding UMAP's Hidden Randomness
-UMAP (Uniform Manifold Approximation and Projection) is a powerful dimensionality reduction technique. Like many complex algorithms, it utilizes randomness during its fit process. This randomness appears specifically in stages like initializing the low-dimensional embedding (where points are initially placed on the plot) and during its Stochastic Gradient Descent (SGD) optimizations (the iterative adjustments to point positions).
+UMAP's Randomness: The Core Concept
+UMAP (Uniform Manifold Approximation and Projection) is a powerful dimensionality reduction technique. Like many complex algorithms, it utilizes randomness during its fit process. This appears in stages such as:
 
-The good news is that we can control this. By setting a random_state (for example, to 42), we provide a fixed input to the pseudo-random number generator that UMAP uses. This ensures that the generator always produces the exact same sequence of 'random' numbers, effectively making these UMAP operations deterministic and reproducible if given identical inputs.
+Initializing the low-dimensional embedding (where points are initially placed).
 
-The Insufficiency of a Single random_state
+During its Stochastic Gradient Descent (SGD) optimizations (the iterative adjustments to point positions).
+
+By setting a random_state (e.g., to 42), we provide a fixed input to the pseudo-random number generator that UMAP uses. This ensures the generator always produces the exact same sequence of 'random' numbers, effectively making these UMAP operations deterministic and reproducible if given identical inputs.
+
+The Problem: A Single random_state Was Insufficient
 Initially, I thought applying random_state directly to the UMAP reducer object was enough. It seemed logical: if the algorithm is consistent, the output should be too. This meant that, if the input data to UMAP was identical, the cluster plot would indeed be consistent across runs.
 
-However, this proved insufficient for my dynamic Streamlit application. My problem wasn't with UMAP's consistency, but with the consistency of its input data.
+However, this proved insufficient for my dynamic Streamlit application. My problem wasn't with UMAP's internal consistency, but with the consistency of its input data.
 
-The Root Cause: A Shifting Dataset
-My application allows users to add and remove "test tweets," and these tweets were directly modifying the CSV file that contained all the original tweet data.
-
-What I overlooked was that:
+The Deep Dive: Why My Data Was Shifting
+The core issue stemmed from how my application handled "test tweets." When users added or removed these test tweets, they directly modified the underlying CSV file that contained all the original tweet data.
 
 Every time a test tweet was added or removed, the CSV file was rewritten.
 
@@ -28,7 +31,7 @@ My data loading process, when preparing data for UMAP fitting, would then read t
 
 Without a random_state applied earlier in the data preparation phase (specifically, during any data sampling), these changes meant that the dataset being fed into UMAP for fitting was inconsistent from one run to the next. Each modification effectively presented a 'new' dataset to UMAP, causing the plot to "jiggle" even though the UMAP algorithm itself was configured for consistency.
 
-The Solution: random_state in Two Key Places
+The Solution: random_state at Every Crucial Step
 The fix involved realizing that reproducibility needs to be handled end-to-end across the entire data pipeline, not just at the algorithm level.
 
 By adding random_state to the sampling of the base tweets (which occurs before any test tweets are considered for UMAP's training), I now ensure that UMAP is always trained on the exact same, reproducible subset of base data.
@@ -42,8 +45,8 @@ That UMAP itself learns from that data in a consistent, reproducible manner.
 The Bonus: Consistently Placed Test Tweets
 Finally, because the UMAP reducer is consistently calculated with these same values and then cached, its transformation rules remain fixed. This is why any test tweets, when projected using this stable reducer (via its deterministic transform() method), also consistently appear in the same location relative to the base clusters.
 
-Why This Matters
-While many articles explain random_state for a single algorithm, few delve into the practical scenario where you might need to apply it at multiple, distinct points within your data pipeline to ensure true, end-to-end reproducibility, especially in interactive applications or when dealing with dynamic data subsets. This deep dive fundamentally changed how I approach pipeline design for stable results.
+Beyond the Basics: Why Your Projects Need This
+While many articles explain random_state for a single algorithm, few delve into the practical scenario where you might need to apply it at multiple, distinct points within your data pipeline to ensure true, end-to-end reproducibility. This is particularly relevant in interactive applications or when dealing with dynamic data subsets. This deep dive fundamentally changed how I approach pipeline design for stable results.
 
 ### 31 July 2025
 
